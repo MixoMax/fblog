@@ -1,24 +1,38 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+
+import './blog_post.css'
 
 const BlogPost = () => {
-    //window.location.href
+    const { postId } = useParams();
+    console.log(postId);
+    const [post, setPost] = useState(null);
 
-    const [blog_name, setBlogName] = useState('');
     useEffect(() => {
-      setBlogName(window.location.href.split('/').pop());
-    }, []);
+        if (!postId) return;
+        fetch(`https://jsonplaceholder.typicode.com/posts/${postId}`)
+            .then((response) => response.json())
+            .then((data) => setPost(data));
+        
+    }, [postId]);
 
-    function get_blog_html() {
-      return `<h1>${blog_name}</h1>
-      <p>This is a blog post.</p>`;
+    function splitText(text) {
+        // split a long text into single <p> elements for each word (split by space)
+        // for animation purposes
+        return text.split(' ').map((word, index) => <span className='blog-word' key={index}>{word}</span>);
     }
 
-    return (
-      <div>
-        <div dangerouslySetInnerHTML={{ __html: get_blog_html(blog_name) }} />
-      </div>
+    return post ? (
+    <div className="blog-post">
+        <h2>{post.title}</h2>
+        <p className="blog-text">
+            {splitText(post.body.repeat(100))}
+        </p>
+    </div>
+    ) : (
+    <p>Loading...</p>
     );
-  };
+};
 
 export default BlogPost;

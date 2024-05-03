@@ -9,11 +9,11 @@ import "./header.css";
 function Header() {
     return (
         <header>
-        <nav className="hbox" id="nav">
-            <NavLink to="/" activeClassName="active">Home</NavLink>
-            <NavLink to="/about" activeClassName="active">About</NavLink>
-            <NavLink to="/contact" activeClassName="active">Contact</NavLink>
-        </nav>
+            <nav className="hbox" id="nav">
+                <NavLink to="/" activeClassName="active">Home</NavLink>
+                <NavLink to="/about" activeClassName="active">About</NavLink>
+                <NavLink to="/contact" activeClassName="active">Contact</NavLink>
+            </nav>
         </header>
     )
 }

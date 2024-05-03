@@ -18,13 +18,12 @@ function App() {
       <Router>
         <Header />
         <Routes>
-          <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<ContactPage />} />
 
           // wildcard route for blog posts
-          <Route path="blog/:blog_name" element={<BlogPost/>} />
-          
+          <Route path="/blog/:postId" element={<BlogPost />} />
+          <Route path="/" element={<Home />} />
         </Routes>
       </Router>
     </div>
