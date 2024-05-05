@@ -10,9 +10,10 @@ function Header() {
     return (
         <header>
             <nav className="hbox" id="nav">
-                <NavLink to="/" activeClassName="active">Home</NavLink>
-                <NavLink to="/about" activeClassName="active">About</NavLink>
-                <NavLink to="/contact" activeClassName="active">Contact</NavLink>
+                <NavLink to="/" activeClassName="active" className="logo nav-item">FBlog</NavLink>
+                <NavLink to="/blog/list" activeClassName="active" className="nav-item">Blog</NavLink>
+                <NavLink to="/about" activeClassName="active" className="nav-item">About</NavLink>
+                <NavLink to="/contact" activeClassName="active" className="nav-item">Contact</NavLink>
             </nav>
         </header>
     )
