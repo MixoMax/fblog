@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://static.linus-minus-sinus.org/www/colors.css">
+</head>
+<body>
+    <style>
+
+        body {
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+            font-weight: 400;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+        }
+
+        h1 {
+            font-size: 2em;
+            font-weight: 700;
+            margin: 0.67em 0;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin: 0.83em 0;
+        }
+
+        h3 {
+            font-size: 1.17em;
+            font-weight: 700;
+            margin: 1em 0;
+        }
+
+        h4 {
+            font-size: 1em;
+            font-weight: 700;
+            margin: 1.33em 0;
+        }
+
+        h5 {
+            font-size: 0.83em;
+            font-weight: 700;
+            margin: 1.67em 0;
+        }
+
+        h6 {
+            font-size: 0.67em;
+            font-weight: 700;
+            margin: 2.33em 0;
+        }
+
+        p {
+            margin: 1em 0;
+        }
+
+        a {
+            color: var(--color-link);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        
+
+    </style>
+    <script>
+        // get url path
+        const url = window.location.pathname.split("/").pop();
+        
+        const json_url = "/" + url + "/json";
+
+        function get_json_and_replace_body(url) {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    replace_body(data, document.getElementById("app-wrapper"));
+                });
+        }
+
+        function replace_body(json_data, target_element) {
+            // json is structured like this:
+            // {
+            //     "tag": eg. "h1" or "p",
+            //     "text": (inner html) eg. "Hello World" or "",
+            //     "content": [array of same structure]
+            //     optional:
+            //     "style": str
+            //     "class": str
+            //     "id": str
+            //     "alt": str
+            //     "src": str
+            //     "href": str
+            // }
+
+            const app_wrapper = target_element
+            app_wrapper.innerHTML = "";
+
+            for (let i = 0; i < json_data.length; i++) {
+                const element = json_data[i];
+                const tag = element.tag;
+                const text = element.text;
+                const content = element.content;
+                const style = element.style;
+                const class_name = element.class;
+                const id = element.id;
+                const alt = element.alt;
+                const src = element.src;
+                const href = element.href;
+
+                const new_element = document.createElement(tag);
+                new_element.innerHTML = text;
+
+                if (content && content.length > 0) {
+                    // recursive call
+                    
+                    replace_body(content, new_element);
+                }
+
+                if (style) {
+                    new_element.style = style;
+                }
+
+                if (class_name) {
+                    new_element.className = class_name;
+                }
+
+                if (id) {
+                    new_element.id = id;
+                }
+
+                if (alt) {
+                    new_element.alt = alt;
+                }
+
+                if (src) {
+                    new_element.src = src;
+                }
+
+                if (href) {
+                    new_element.href = href;
+                }
+
+                app_wrapper.appendChild(new_element);
+            }
+
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            get_json_and_replace_body(json_url);
+        });
+    </script>
+
+    <div id="app-wrapper">
+
+    </div>
+
+</body>
+</html>
