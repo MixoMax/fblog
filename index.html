@@ -16,6 +16,26 @@
             color: var(--color-text);
         }
 
+        #app-wrapper {
+            max-width: min(100%, 800px);
+            margin: 0 auto;
+            padding: 1em;
+        }
+
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1em;
+        }
+
+        .article {
+            margin: 1em 0;
+            padding: 1em;
+            border: 1px solid var(--color-border);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
         h1 {
             font-size: 2em;
             font-weight: 700;
@@ -155,8 +175,68 @@
 
         }
 
+        function get_all_articles_and_replace_body() {
+            fetch("/api/articles_descriptions")
+                .then(response => response.json()) // -> [{title, url, description}, ...]
+                .then(data => {
+                    const app_wrapper = document.getElementById("app-wrapper");
+                    app_wrapper.innerHTML = "";
+                    const articles_grid = document.createElement("div");
+                    articles_grid.className = "articles-grid";
+                    app_wrapper.appendChild(articles_grid);
+
+                    for (let i = 0; i < data.length; i++) {
+                        const article = data[i];
+                        const article_div = create_article_link(article.title, article.url, article.description);
+                        articles_grid.appendChild(article_div);
+                    }
+                });
+        }
+
+        function create_article_link(title, url, description) {
+            const article_div = document.createElement("div");
+            article_div.className = "article";
+            article_div.addEventListener("click", function() {
+                var current_url = window.location.href.split("/")
+                current_url.pop()
+                current_url.push(url)
+                var new_url = current_url.join("/")
+                
+                // if ctrl is pressed, open in new tab
+                if (!event.ctrlKey) {
+                    window.location.href = new_url;
+                } else {
+                    // open in new tab
+                    window.open(new_url, "_blank");
+                }
+                
+            });
+
+            const title_element = document.createElement("h2");
+            title_element.innerHTML = title;
+
+            const description_element = document.createElement("p");
+            description_element.innerHTML = description;
+
+            article_div.appendChild(title_element);
+            article_div.appendChild(description_element);
+
+            return article_div;
+        }
+
+
+
         document.addEventListener("DOMContentLoaded", function() {
-            get_json_and_replace_body(json_url);
+            if (url) {
+                // unescape url
+                var title = decodeURI(url) + " by Linus Horn";
+                document.title = title;
+
+                get_json_and_replace_body(json_url);
+            } else {
+                document.title = "fblog by Linus Horn";
+                get_all_articles_and_replace_body();
+            }
         });
     </script>
 
