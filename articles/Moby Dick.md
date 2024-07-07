@@ -20,7 +20,7 @@ By Herman Melville
 
 > **CONTENTS**
 > 
-> [CHAPTER 1. Loomings.](# CHAPTER 1. Loomings.)
+> [CHAPTER 1. Loomings.](#CHAPTER 1. Loomings.)
 > 
 > [CHAPTER 2. The Carpet-Bag.](#link2HCH0002)
 > 
