@@ -3,7 +3,7 @@
 
 Topics: Hardware, Display, OLED, LG, 4K, 1080p, 480Hz, 240Hz, Dual Mode, Gaming, Monitor, Review
 
-Written by: Linus Sebastian (Linus Tech Tips)
+### Written by: Linus Sebastian (Linus Tech Tips)
 
 ["Linus Tech Tips - My Computer Thinks This OLED is TWO Monitors...."](https://www.youtube.com/watch?v=eJX-SJx-kQo)
 
