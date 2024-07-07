@@ -431,15 +431,97 @@
                 get_all_articles_and_replace_body();
             }
         });
+    
+        
+
     </script>
+
+    <h1 id="top"></h1>
 
     <div id="home-link">
         <a href="/" id="home-link">🏠️ Home</a>
     </div>
+
+    <div id="reading-progress">
+        <div id="reading-progress-bar"></div>
+    </div>
+
+    <div id="to-top">
+        <a href="#top">🔝</a>
+    </div>
     
+
     <div id="app-wrapper">
 
     </div>
+
+
+    <div id="footer">
+        <span>
+            <p>© 2024</p> <a href="mailto:linus@linush.org">Linus Horn</a>
+        </span>
+    </div>
+
+    <script>
+        function update_reading_progress() {
+            const scroll_position = window.scrollY;
+            const total_height = document.body.scrollHeight - window.innerHeight;
+            const reading_progress = scroll_position / total_height * 100;
+
+            const reading_progress_bar = document.getElementById("reading-progress-bar");
+            reading_progress_bar.style.width = reading_progress + "%";
+        }
+
+        window.addEventListener("scroll", update_reading_progress);
+        window.addEventListener("resize", update_reading_progress);
+
+        window.addEventListener("scroll", function() {
+            const to_top = document.getElementById("to-top");
+            if (window.scrollY > 100) {
+                to_top.style.display = "block";
+            } else {
+                to_top.style.display = "none";
+            }
+        });
+    </script>
+
+    <style>
+        #to-top {
+            position: fixed;
+            bottom: 1em;
+            right: 1em;
+            font-size: 2em;
+            display: none;
+
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        #reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background-color: var(--color-bg);
+            z-index: 1000;
+        }
+
+        #reading-progress-bar {
+            height: 100%;
+            background-color: var(--color-link);
+            width: 0;
+        }
+    </style>
+
 
 </body>
 </html>
