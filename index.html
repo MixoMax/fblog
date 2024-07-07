@@ -235,6 +235,13 @@
                     for (let i = 0; i < remove_chars.length; i++) {
                         new_id = new_id.replaceAll(remove_chars[i], "-")
                     }
+
+                    // remove multiple dashes
+                    while (new_id.includes("--")) {
+                        new_id = new_id.replaceAll("--", "-")
+                    }
+                    
+
                     new_element.id = new_id
                 }
 
