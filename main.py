@@ -146,7 +146,7 @@ def read_search(q: str):
 
 @app.post("/webhook")
 async def webhook(data: dict):
-    cmd = "git fetch && git pull"
+    cmd = "git add * && git stash && git fetch && git pull"
     os.system(cmd)
     return JSONResponse(content={"status": "success"})
 
