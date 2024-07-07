@@ -240,7 +240,15 @@
                     while (new_id.includes("--")) {
                         new_id = new_id.replaceAll("--", "-")
                     }
-                    
+
+                    // remove leading and trailing dashes
+                    if (new_id[0] === "-") {
+                        new_id = new_id.slice(1)
+                    }
+                    if (new_id[new_id.length - 1] === "-") {
+                        new_id = new_id.slice(0, -1)
+                    }
+
 
                     new_element.id = new_id
                 }
