@@ -7,6 +7,9 @@ import json
 from md_to_json import convert_markdown_to_json
 
 app = FastAPI()
+
+port = 1970
+
 articles_dir = "./articles"
 description_length = 150
 
@@ -178,5 +181,5 @@ def read_article_json(article_name: str):
     return JSONResponse(content=json_data)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=port)
     
