@@ -229,6 +229,8 @@
 
                 if (id) {
                     new_element.id = id;
+                } else if (tag === "h1") {
+                    new_element.id = text;
                 }
 
                 if (alt) {
