@@ -230,7 +230,12 @@
                 if (id) {
                     new_element.id = id;
                 } else if (tag === "h1") {
-                    new_element.id = text;
+                    const remove_chars = [".", "’", " ", ";", ",", ":", "!", "?"]
+                    var new_id = text
+                    for (let i = 0; i < remove_chars.length; i++) {
+                        new_id = new_id.replaceAll(remove_chars[i], "")
+                    }
+                    new_element.id = new_id
                 }
 
                 if (alt) {
