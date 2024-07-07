@@ -14,6 +14,8 @@
             font-weight: 400;
             background-color: var(--color-bg);
             color: var(--color-text);
+
+            --color-link: #0077cc;
         }
 
         #app-wrapper {
@@ -34,6 +36,26 @@
             border: 1px solid var(--color-border);
             border-radius: 5px;
             cursor: pointer;
+        }
+
+        .topics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5em;
+        }
+
+        .topic {
+            padding: 0.5em;
+            border: 1px solid var(--color-border);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #home-link {
+            position: fixed;
+            left: 1em;
+            font-size: 1.5em;
+            color: var(--color-text) !important;
         }
 
         h1 {
@@ -90,6 +112,29 @@
             height: auto;
         }
 
+        code {
+            background-color: var(--color-code-bg);
+            color: var(--color-code-text);
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.5em;
+            font-size: 1em;
+            border: 1px solid var(--color-border);
+            border-radius: 5px;
+            margin: 1em 0;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--color-link);
+        }
+
+
+
         
 
     </style>
@@ -137,8 +182,36 @@
                 const src = element.src;
                 const href = element.href;
 
+
+                if (tag === "custom_topics") {
+                    // topics for the article
+                    // on click, open the topics page
+                    const topics = element.topics;
+
+                    const topics_div = document.createElement("div");
+                    topics_div.className = "topics";
+
+                    for (let i = 0; i < topics.length; i++) {
+                        const topic = topics[i];
+                        const topic_element = document.createElement("div");
+                        topic_element.className = "topic";
+                        topic_element.innerHTML = topic;
+                        topic_element.addEventListener("click", function() {
+                            const new_url = "/topics/" + topic;
+                            window.location.href = new_url;
+                        });
+                        topics_div.appendChild(topic_element);
+                    }
+
+                    app_wrapper.appendChild(topics_div);
+
+                    continue;
+                }
+
                 const new_element = document.createElement(tag);
                 new_element.innerHTML = text;
+
+
 
                 if (content && content.length > 0) {
                     // recursive call
@@ -175,20 +248,91 @@
 
         }
 
-        function get_all_articles_and_replace_body() {
+        function get_all_articles_and_replace_body(topic_filter = null) {
+            const app_wrapper = document.getElementById("app-wrapper");
+            app_wrapper.innerHTML = "";
+
+            const h1 = document.createElement("h1");
+            h1.innerHTML = "Linus Horn's totally awesome blog";
+            app_wrapper.appendChild(h1);
+
+            const search_bar = document.createElement("input");
+            search_bar.type = "text";
+            search_bar.placeholder = "Search for articles";
+
+            search_bar.addEventListener("keydown", function(event) {
+                if (event.key !== "Enter") {
+                    return;
+                }
+                const search_term = search_bar.value.toLowerCase();
+                
+                const new_url = "/search?q=" + search_term;
+                window.location.href = new_url;
+            });
+            app_wrapper.appendChild(search_bar);
+
+
             fetch("/api/articles_descriptions")
                 .then(response => response.json()) // -> [{title, url, description}, ...]
                 .then(data => {
-                    const app_wrapper = document.getElementById("app-wrapper");
-                    app_wrapper.innerHTML = "";
                     const articles_grid = document.createElement("div");
                     articles_grid.className = "articles-grid";
                     app_wrapper.appendChild(articles_grid);
 
                     for (let i = 0; i < data.length; i++) {
                         const article = data[i];
+
+                        if (topic_filter && !article.topics.includes(topic_filter)) {
+                            continue;
+                        }
+
                         const article_div = create_article_link(article.title, article.url, article.description);
                         articles_grid.appendChild(article_div);
+                    }
+                });
+        }
+
+        function get_search_results_and_replace_body(search_term) {
+
+            const app_wrapper = document.getElementById("app-wrapper");
+            app_wrapper.innerHTML = "";
+
+            const h1 = document.createElement("h1");
+            h1.innerHTML = "Search results for: " + search_term;
+            app_wrapper.appendChild(h1);
+
+            const search_bar = document.createElement("input");
+            search_bar.type = "text";
+            search_bar.placeholder = "Search for articles";
+
+            search_bar.addEventListener("keydown", function(event) {
+                if (event.key !== "Enter") {
+                    return;
+                }
+                const search_term = search_bar.value.toLowerCase();
+                
+                const new_url = "/search?q=" + search_term;
+                window.location.href = new_url;
+            });
+
+            app_wrapper.appendChild(search_bar);
+
+
+
+            const url = "/api/search?q=" + search_term;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    for (let i = 0; i < data.length; i++) {
+                        const article = data[i];
+                        
+                        const title = article.title;
+                        const url = article.url;
+                        const description = article.description;
+
+                        const article_div = create_article_link(title, url, description);
+                        app_wrapper.appendChild(article_div);
                     }
                 });
         }
@@ -199,6 +343,9 @@
             article_div.addEventListener("click", function() {
                 var current_url = window.location.href.split("/")
                 current_url.pop()
+                if (current_url[current_url.length - 1] === "topics") {
+                    current_url.pop()
+                }
                 current_url.push(url)
                 var new_url = current_url.join("/")
                 
@@ -227,9 +374,33 @@
 
 
         document.addEventListener("DOMContentLoaded", function() {
-            if (url) {
+            const path_arr = window.location.pathname.split("/");
+            // if path is /{blog_name} -> get_json_and_replace_body
+            // if path is / -> get_all_articles_and_replace_body
+            // if path is /topics/{topic} -> get_all_articles_and_replace_body with filter
+            // if path is /search?q={search_term} -> new function that searches for articles
+
+            path_arr.shift();
+
+            
+            if (path_arr.length === 2 && path_arr[0] === "topics") {
+                // get all articles with topic
+                const topic = decodeURI(path_arr[1]);
+
+                
+                document.title = "Topic: " + topic + " - Linus Horn";
+                
+                get_all_articles_and_replace_body(topic);
+            } else if (path_arr[0] === "search")  {
+                // get ?q={search_term}
+                // url parameter
+                const search_term = decodeURI(new URLSearchParams(window.location.search).get("q"));
+                document.title = "Search: " + search_term + " - Linus Horn";
+                get_search_results_and_replace_body(search_term);
+
+            } else if (url) {
                 // unescape url
-                var title = decodeURI(url) + " by Linus Horn";
+                var title = decodeURI(url) + " - Linus Horn";
                 document.title = title;
 
                 get_json_and_replace_body(json_url);
@@ -240,6 +411,10 @@
         });
     </script>
 
+    <div id="home-link">
+        <a href="/" id="home-link">🏠️ Home</a>
+    </div>
+    
     <div id="app-wrapper">
 
     </div>

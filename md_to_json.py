@@ -92,6 +92,12 @@ def convert_element_to_json(element: bs4.Tag) -> dict:
     # get text content
     if element.text:
         json_element["text"] = element.text
+
+        if element.text.startswith("Topics:"):
+            json_element["tag"] = "custom_topics"
+            json_element["topics"] = [topic.strip() for topic in element.text.split(":")[1].split(",")]
+    else:
+        json_element["text"] = ""
     
     # get child elements
     if element.contents:

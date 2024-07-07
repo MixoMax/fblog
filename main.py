@@ -8,7 +8,7 @@ from md_to_json import convert_markdown_to_json
 
 app = FastAPI()
 articles_dir = "./articles"
-base_url = "http://localhost:8000"
+description_length = 150
 
 json_404 = [
     {
@@ -70,7 +70,8 @@ def read_all_articles():
         {
             "title": str,
             "url": str
-            "description": str
+            "description": str,
+            "topics": list
         }
     """
     articles = get_all_article_names()
@@ -81,14 +82,22 @@ def read_all_articles():
         
         title = None
         description = ""
+        topics = []
         for element in data:
             tag = element["tag"]
             if tag == "h1" and title is None:
                 title = element["text"]
             
-            elif tag in ["p", "h2", "h3", "a"] and len(description) < 100:
-                description += element["text"]
+            elif (tag in ["p", "h2", "h3", "a"] and len(description) < description_length):
+                description += element.get("text", "")
                 description += " "
+            
+            elif tag == "custom_topics":
+                topics = element["topics"]
+        
+        if len(description) > description_length:
+            description = description[:description_length] + "..."
+        
         
         if title is None:
             title = article_name
@@ -96,7 +105,8 @@ def read_all_articles():
         articles_data.append({
             "title": title,
             "url": article_name,
-            "description": description
+            "description": description,
+            "topics": topics
         })
 
     return JSONResponse(content=articles_data)
@@ -109,16 +119,28 @@ async def search_articles(q: str):
     for article_name in article_names:
         data = get_article_data(article_name)
         
+        description = ""
         for element in data:
             if "text" in element:
-                if q.lower() in element["text"].lower():
-                    articles_data.append({
-                        "title": element["text"],
-                        "url": article_name
-                    })
-                    break
+                description += element["text"]
+
+        if q.lower() in description.lower():
+            articles_data.append({
+                "title": article_name,
+                "url": article_name,
+                "description": description[:description_length] + "..."
+            })
     
     return JSONResponse(content=articles_data)
+
+@app.get("/topics/{topic_name}")
+def read_topic(topic_name: str):
+    return FileResponse("./index.html")
+
+@app.get("/search")
+def read_search(q: str):
+    return FileResponse("./index.html")
+
 
 
 @app.get("/{article_name}")
