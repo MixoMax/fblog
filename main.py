@@ -141,6 +141,13 @@ def read_topic(topic_name: str):
 def read_search(q: str):
     return FileResponse("./index.html")
 
+@app.post("/webhook")
+async def webhook(data: dict):
+    cmd = "git fetch && git pull"
+    os.system(cmd)
+    return JSONResponse(content={"status": "success"})
+
+
 
 
 @app.get("/{article_name}")
