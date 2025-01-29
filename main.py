@@ -1,185 +1,147 @@
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse, FileResponse
-import uvicorn
-import os
-import json
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
 
-from md_to_json import convert_markdown_to_json
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse, HTMLResponse
+import uvicorn
+
+import markdown
+
+import requests
+import os
+import sys
+
+from datetime import datetime
+
+from core import DB, get_vector, BlogPost
 
 app = FastAPI()
 
-port = 1970
+db = DB("./data/blog.db")
 
-articles_dir = "./articles"
-description_length = 150
 
-json_404 = [
-    {
-        "tag": "h1",
-        "text": "404 - Not Found",
-        "style": "color: red;"
-    },
-    {
-        "tag": "p",
-        "text": "The requested page could not be found."
-    }
-]
+def md_to_html(md_str: str) -> str:
+    return markdown.markdown(md_str)
 
-def get_article_data(article_name) -> dict:
-    article_path = os.path.join(articles_dir, article_name + ".md")
-    if not os.path.exists(article_path):
-        return None
-    
-    cached_json_path = os.path.join(articles_dir, article_name + ".json")
-    
-    if not os.path.exists(cached_json_path):
-        data = convert_markdown_to_json(article_path)
-        with open(cached_json_path, "w", encoding="utf-8") as file:
-            json.dump(data, file, ensure_ascii=False, indent=4)
-    else:
-        metadata = os.stat(article_path)
-        cached_metadata = os.stat(cached_json_path)
-        if metadata.st_mtime > cached_metadata.st_mtime:
-            # Markdown file is newer than the cached JSON
-            data = convert_markdown_to_json(article_path)
-            with open(cached_json_path, "w", encoding="utf-8") as file:
-                json.dump(data, file, ensure_ascii=False, indent=4)
-        else:
-            with open(cached_json_path, "r", encoding="utf-8") as file:
-                data = json.load(file)
-    
-    return data
 
-def get_all_article_names() -> list:
-    articles = []
-    for file in os.listdir(articles_dir):
-        if file.endswith(".md"):
-            article_name = file[:-3]
-            articles.append(article_name)
-    return articles
+
+@app.get("/api/v1/search")
+async def search(q: str):
+    """
+    GET /api/v1/search?q={q}
+
+    Returns a list of posts that match the search query {q} in this JSON format:
+
+        [
+        {
+            "id": int
+            "title": str,
+            "title_cleaned": str,
+            "summary": str,
+            "created_at": str,
+            "author": str,
+            "tags": list[str],
+            "url": str
+        },
+        ...
+    ]
+    """
+
+    global db
+    posts: list[BlogPost] = db.search_posts(q)
+    data = [post.to_json() for post in posts]
+    return JSONResponse(content=data)
+
+@app.get("/api/v1/newest_posts")
+async def newest_posts(limit: int = 10):
+    """
+    GET /api/v1/newest_posts
+
+    Returns the {limit:int=10} newest posts in this JSON format:
+
+    [
+        {
+            "id": int
+            "title": str,
+            "title_cleaned": str,
+            "summary": str,
+            "created_at": str,
+            "author": str,
+            "tags": list[str],
+            "url": str
+        },
+        ...
+    ]
+    """
+    global db
+    posts: list[BlogPost] = db.newest_posts(limit)
+    data = [post.to_json() for post in posts]
+    for post, d in zip(posts, data):
+        d["url"] = f"/{post.title_cleaned}"
+    return JSONResponse(content=data)
+
+@app.get("/api/v1/_reindex")
+async def reindex():
+    global db
+    db.background_process()
+    return JSONResponse(content={"status": "success"})
+
+@app.get("/api/v1/get_post")
+async def get_post(post_id: int):
+    global db
+    post = db.get_post(post_id)
+    if post is None:
+        return JSONResponse(content={"status": "error", "message": "Post not found"})
+    return JSONResponse(content=post.to_json())
 
 
 @app.get("/")
-def read_root():
-    return FileResponse("./index.html")
+@app.get("/index.html")
+async def index():
+    return FileResponse("./static/index.html")
 
-@app.get("/api/articles_descriptions")
-def read_all_articles():
-    """
-    Get a list of all articles in the articles directory
+@app.get("/styles.css")
+async def style():
+    return FileResponse("./static/styles.css")
 
-    returns:
-    a list of:
-        {
-            "title": str,
-            "url": str
-            "description": str,
-            "topics": list
-        }
-    """
-    articles = get_all_article_names()
+
+@app.get("/error/{code}")
+async def error(code: int):
+    fp = f"./static/error/{code}.html"
+    if os.path.exists(fp):
+        return FileResponse(fp)
+    else:
+        return FileResponse("./static/error/404.html")
+
+
+@app.get("/{post_title_cleaned}")
+async def post(post_title_cleaned: str):
+    global db
+    post = db.get_post_by_cleaned_title(post_title_cleaned)
+
+    if post is None:
+        return RedirectResponse(url="/error/404")
     
-    articles_data = []
-    for article_name in articles:
-        data = get_article_data(article_name)
-        
-        title = None
-        description = ""
-        topics = []
-        for element in data:
-            tag = element["tag"]
-            if tag == "h1" and title is None:
-                title = element["text"]
-            
-            elif (tag in ["p", "h2", "h3", "a"] and len(description) < description_length):
-                description += element.get("text", "")
-                description += " "
-            
-            elif tag == "custom_topics":
-                topics = element["topics"]
-        
-        if len(description) > description_length:
-            description = description[:description_length] + "..."
-        
-        
-        if title is None:
-            title = article_name
-        
-        articles_data.append({
-            "title": title,
-            "url": article_name,
-            "description": description,
-            "topics": topics
-        })
-
-    return JSONResponse(content=articles_data)
-
-@app.get("/api/search")
-async def search_articles(q: str):
-
-    article_names = get_all_article_names()
-    articles_data = []
-    for article_name in article_names:
-        data = get_article_data(article_name)
-        
-        description = ""
-        for element in data:
-            if "text" in element:
-                description += element["text"]
-
-        if q.lower() in description.lower():
-            articles_data.append({
-                "title": article_name,
-                "url": article_name,
-                "description": description[:description_length] + "..."
-            })
+    with open("./static/post_template.html", "r", encoding="utf-8") as f:
+        template = f.read()
     
-    return JSONResponse(content=articles_data)
+    replacements = {
+        "[TITLE]": post.title,
+        "[CONTENT]": md_to_html(post.content),
+        "[CREATED_AT]": str(post.created_at.strftime("%d %B %Y")),
+        "[AUTHOR]": post.author,
+        "[TAGS]": ", ".join(post.tags)
+    }
 
-@app.get("/topics/{topic_name}")
-def read_topic(topic_name: str):
-    return FileResponse("./index.html")
-
-@app.get("/search")
-def read_search(q: str):
-    return FileResponse("./index.html")
-
-@app.post("/webhook")
-async def webhook(data: dict):
-    cmd = "git add * && git stash && git fetch && git pull"
-    os.system(cmd)
-    return JSONResponse(content={"status": "success"})
-
-
-
-
-@app.get("/{article_name}")
-def read_index(article_name: str):
-    return FileResponse("./index.html")
-
-@app.get("/{article_name}/json")
-def read_article_json(article_name: str):
-    article_path = os.path.join(articles_dir, article_name + ".md")
+    for key, value in replacements.items():
+        template = template.replace(key, value)
     
-    if not os.path.exists(article_path):
-        return JSONResponse(content=json_404)
-    
-    cached_json_path = os.path.join(articles_dir, article_name + ".json")
-    if os.path.exists(cached_json_path):
-        metadata = os.stat(article_path)
-        cached_metadata = os.stat(cached_json_path)
-        if metadata.st_mtime < cached_metadata.st_mtime:
-            # Cached JSON is newer than the markdown file
-            with open(cached_json_path, "r", encoding="utf-8") as file:
-                data = json.load(file)
-            return JSONResponse(content=data)
-    
-    json_data = convert_markdown_to_json(article_path)
-    with open(cached_json_path, "w", encoding="utf-8") as file:
-        json.dump(json_data, file, ensure_ascii=False, indent=4)
-    
-    return JSONResponse(content=json_data)
+    return HTMLResponse(content=template)
+
+
 
 if __name__ == "__main__":
+    port = 8000
+    if len(sys.argv) > 1:
+        port = int(sys.argv[1])
     uvicorn.run(app, host="0.0.0.0", port=port)
-    

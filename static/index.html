@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles.css">
+    <title>Linus's Blog</title>
+    <style>
+        .description {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2rem;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .theme-toggle {
+            background: none;
+            color: var(--text-color);
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            width: 150px;
+        }
+
+        .article {
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .article:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: var(--hover-color);
+        }
+
+        .article h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .article a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .article a:hover {
+            text-decoration: underline;
+        }
+
+        .meta {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            margin-bottom: 1rem;
+        }
+
+        .tags {
+            margin-top: 1rem;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 8px;
+            margin-right: 8px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        .error {
+            color: #dc2626;
+            padding: 1rem;
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        footer {
+            margin-top: 2rem;
+            padding: 1rem 0;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        footer p {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 1rem;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Linus's Blog</h1>
+        <p class="description">Welcome to my blog where I share my thoughts on technology, programming, and more.</p>
+    </header>
+
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Search posts..." aria-label="Search posts">
+        <select id="results-count" aria-label="Number of results">
+            <option value="5">5 posts</option>
+            <option value="10">10 posts</option>
+            <option value="20">20 posts</option>
+        </select>
+        <button onclick="searchArticles()">Search</button>
+    </div>
+
+    <div class="controls">
+        <h2>Posts</h2>
+        <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark Mode</button>
+    </div>
+
+    <div id="error-container"></div>
+    <div id="search-results"></div>
+    <div id="newest-articles"></div>
+
+    <footer>
+        <p>Created with ❤️ by Linus Horn</p>
+        <p>&copy; 2024 Linus Horn <a href="https://github.com/MixoMax/fblog" target="_blank" style="color: var(--primary-color); text-decoration: none;">GitHub</a></p>
+    </footer>
+
+    <script>
+        let darkMode = localStorage.getItem('theme') === 'dark';
+        let autoRefreshInterval;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            toggleTheme();
+            toggleTheme();
+        });
+
+        function toggleTheme() {
+            darkMode = !darkMode;
+            document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+            const themeToggle = document.querySelector('.theme-toggle');
+            themeToggle.textContent = darkMode ? '☀️ Light Mode' : '🌙 Dark Mode';
+            localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+        }
+
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = '<div class="loading">Loading posts...</div>';
+        }
+
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.innerHTML = `<div class="error">${message}</div>`;
+            setTimeout(() => {
+                errorContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        async function searchArticles() {
+            const query = document.getElementById('search-input').value.trim();
+            if (!query) return;
+
+            const limit = document.getElementById('results-count').value;
+            showLoading('search-results');
+
+            try {
+                const response = await fetch(`/api/v1/search?q=${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error('Search failed');
+                
+                const posts = await response.json();
+                displayPosts(posts, 'search-results');
+            } catch (error) {
+                showError('Failed to search posts. Please try again.');
+                document.getElementById('search-results').innerHTML = '';
+            }
+        }
+
+        async function fetchNewestArticles() {
+            showLoading('newest-articles');
+
+            try {
+                const response = await fetch('/api/v1/newest_posts?limit=10');
+                if (!response.ok) throw new Error('Failed to fetch posts');
+                
+                const posts = await response.json();
+                displayPosts(posts, 'newest-articles');
+            } catch (error) {
+                showError('Failed to fetch newest posts. Will retry in 30 seconds.');
+            }
+        }
+
+        function displayPosts(posts, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            if (!posts || posts.length === 0) {
+                container.innerHTML = '<p class="no-results">No posts found.</p>';
+                return;
+            }
+
+            const h2 = document.createElement('h2');
+            if (containerId === 'search-results') {
+                h2.textContent = 'Search Results';
+            } else {
+                h2.textContent = 'Newest Posts';
+            }
+            container.appendChild(h2);
+
+            posts.forEach(post => {
+                const articleDiv = document.createElement('div');
+                articleDiv.classList.add('article');
+
+                const tagHtml = post.tags ? post.tags.map(tag => `<span class="tag">${tag}</span>`).join(' ') : '';
+                
+                articleDiv.innerHTML = `
+                    <h3><a href="/${post.title_cleaned}">${post.title}</a></h3>
+                    <p class="meta">By ${post.author} • ${new Date(post.created_at).toLocaleDateString("en-GB", { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p>${post.summary}</p>
+                    <div class="tags">${tagHtml}</div>
+                `;
+                container.appendChild(articleDiv);
+            });
+        }
+
+        // Setup auto-refresh for newest articles
+        function setupAutoRefresh() {
+            fetchNewestArticles();
+            autoRefreshInterval = setInterval(fetchNewestArticles, 300000); // Refresh every 5 minutes
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.activeElement.id === 'search-input') {
+                searchArticles();
+            }
+        });
+
+        // Initialize
+        setupAutoRefresh();
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            clearInterval(autoRefreshInterval);
+        });
+    </script>
+</body>
+</html>

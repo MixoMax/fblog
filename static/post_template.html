@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[TITLE]</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .meta {
+            color: var(--text-color);
+            opacity: 0.8;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .content {
+            line-height: 1.6;
+            color: var(--text-color);
+        }
+
+        .content p {
+            margin-bottom: 1rem;
+        }
+
+        .theme-toggle {
+            background: none;
+            color: var(--text-color);
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            margin-bottom: 1rem;
+            width: 150px;
+        }
+
+        .theme-toggle:hover {
+            opacity: 0.9;
+            background: var(--hover-color);
+        }
+
+        .tags {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 8px;
+            margin-right: 8px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        footer {
+            margin-top: 2rem;
+            padding: 1rem 0;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        footer p {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .back-to-home {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .back-to-home:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-to-home">← Back to Home</a>
+        <button onclick="toggleTheme()" class="theme-toggle">
+            🌙 Dark Mode
+        </button>
+        <h1>[TITLE]</h1>
+        <div class="meta">
+            By [AUTHOR] • [CREATED_AT]
+        </div>
+        <div class="content">[CONTENT]</div>
+        <div class="tags">
+            <span class="tag">[TAGS]</span>
+        </div>
+    </div>
+
+    <footer>
+        <p>Created with ❤️ by Linus Horn</p>
+        <p>&copy; 2024 Linus Horn <a href="https://github.com/MixoMax/fblog" target="_blank" style="color: var(--primary-color); text-decoration: none;">GitHub</a></p>
+    </footer>
+
+    <script>
+        let darkMode = localStorage.getItem('theme') === 'dark';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // respect user's preference
+            toggleTheme();
+            toggleTheme();
+
+
+            // if tags is empty, remove the tags section
+            const tags = document.querySelector('.tags');
+            if (tags.textContent.trim() === '') {
+                tags.remove();
+            }
+
+        });
+
+        function toggleTheme() {
+            darkMode = !darkMode;
+            document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+            const themeToggle = document.querySelector('.theme-toggle');
+            themeToggle.textContent = darkMode ? '☀️ Light Mode' : '🌙 Dark Mode';
+            localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+        }
+    </script>
+</body>
+</html>
